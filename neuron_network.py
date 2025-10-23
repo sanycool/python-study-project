@@ -38,7 +38,19 @@ class FriendshipPredictor(nn.Module):
         return x
 
 
-def train_model(model, criterion, optimizer, train_loader, val_loader, num_epochs):
+def train_model(model, criterion, optimizer, train_loader, val_loader, num_epochs, train_size, val_size):
+    """
+    Основная функция для тренировки и валидации модели по эпохам.
+
+    :param model: Экземпляр модели PyTorch.
+    :param criterion: Функция потерь (nn.CrossEntropyLoss).
+    :param optimizer: Оптимизатор (optim.Adam).
+    :param train_loader: DataLoader для обучающего набора.
+    :param val_loader: DataLoader для валидационного набора.
+    :param num_epochs: Количество эпох.
+    :param train_size: Общий размер обучающего набора (для расчета среднего loss).
+    :param val_size: Общий размер валидационного набора.
+    """
     for epoch in range(num_epochs):
 
         # ----------------------------------------
@@ -69,7 +81,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, num_epoch
             running_train_loss += loss.item() * data.size(0)
 
         # Расчет средней потери за эпоху
-        epoch_train_loss = running_train_loss / len(train_dataset)
+        epoch_train_loss = running_train_loss / train_size
 
         # ----------------------------------------
         # II. ФАЗА ВАЛИДАЦИИ (VALIDATION PHASE)
@@ -97,8 +109,8 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, num_epoch
                 correct_predictions += (predicted_classes == targets).sum().item()
 
         # Расчет метрик за эпоху
-        epoch_val_loss = running_val_loss / len(val_dataset)
-        epoch_val_accuracy = correct_predictions / len(val_dataset)
+        epoch_val_loss = running_val_loss / val_size
+        epoch_val_accuracy = correct_predictions / val_size
 
         # ----------------------------------------
         # III. ВЫВОД РЕЗУЛЬТАТОВ
@@ -117,6 +129,27 @@ if __name__ == '__main__':
     batch_size = 64
     num_epochs = 25
 
+    # --- Имитация данных (ваши реальные данные будут здесь) ---
+    # X_train_t: обучающие признаки, y_train_t: обучающие метки (0 или 1)
+    # X_val_t: валидационные признаки, y_val_t: валидационные метки
+    # 10 - количество признаков (INPUT_SIZE)
+    #TODO: написать класс с данными
+    train_size = 1000
+    val_size = 200
+
+    X_train_t = torch.randn(1000, 10)
+    y_train_t = torch.randint(0, 2, (1000,))
+
+    X_val_t = torch.randn(200, 10)
+    y_val_t = torch.randint(0, 2, (200,))
+
+    # Создание DataLoader
+    train_dataset = TensorDataset(X_train_t, y_train_t)
+    val_dataset = TensorDataset(X_val_t, y_val_t)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
     # Создание экземпляра модели
     model = FriendshipPredictor(input_layer, hidden_1_layers, hidden_2_layers, output_layer)
     print(model)
@@ -130,21 +163,14 @@ if __name__ == '__main__':
     # Мы передаем ему все обучаемые параметры модели (model.parameters())
     optimizer = optim.Adam(model.parameters(), lr=0.001)  # lr - learning rate (скорость обучения)
 
-
-    # --- Имитация данных (ваши реальные данные будут здесь) ---
-    # X_train_t: обучающие признаки, y_train_t: обучающие метки (0 или 1)
-    # X_val_t: валидационные признаки, y_val_t: валидационные метки
-    # 10 - количество признаков (INPUT_SIZE)
-    #TODO: написать класс с данными
-    X_train_t = torch.randn(1000, 10)
-    y_train_t = torch.randint(0, 2, (1000,))
-
-    X_val_t = torch.randn(200, 10)
-    y_val_t = torch.randint(0, 2, (200,))
-
-    # Создание DataLoader
-    train_dataset = TensorDataset(X_train_t, y_train_t)
-    val_dataset = TensorDataset(X_val_t, y_val_t)
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    # --- ЗАПУСК ОБУЧЕНИЯ ---
+    train_model(
+        model,
+        criterion,
+        optimizer,
+        train_loader,
+        val_loader,
+        num_epochs,
+        train_size=train_size,  # Передаем размер обучающего набора
+        val_size=val_size  # Передаем размер валидационного набора
+    )
